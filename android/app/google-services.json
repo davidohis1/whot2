@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "963505527425",
+    "project_id": "ludo-770b5",
+    "storage_bucket": "ludo-770b5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:963505527425:android:acc1862a698f6ef0b6cb80",
+        "android_client_info": {
+          "package_name": "com.example.crud"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1IZw2AICwB1Pw2eAlbqAW9OSdztCkl3w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:963505527425:android:096374938bb24b67b6cb80",
+        "android_client_info": {
+          "package_name": "com.example.test2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1IZw2AICwB1Pw2eAlbqAW9OSdztCkl3w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:963505527425:android:b103a7f31c04ee47b6cb80",
+        "android_client_info": {
+          "package_name": "com.example.whot2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1IZw2AICwB1Pw2eAlbqAW9OSdztCkl3w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
