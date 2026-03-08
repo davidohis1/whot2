@@ -27,9 +27,14 @@ class _ChessGameScreenState extends ConsumerState<ChessGameScreen> {
   ChessMove? _pendingPromoMove;
   bool _resultShown = false;
 
+  Timer? _turnTimer;
+  int    _localTurnSeconds = 60;
+  String _lastTurnOwner    = '';
+
   @override
   void dispose() {
     _timer?.cancel();
+    _turnTimer?.cancel();
     super.dispose();
   }
 
@@ -52,19 +57,53 @@ class _ChessGameScreenState extends ConsumerState<ChessGameScreen> {
       if (newW <= 0 || newB <= 0) {
         _timer?.cancel();
         final loser = newW <= 0 ? PieceColor.white : PieceColor.black;
-
-        // Armageddon draw odds — if black runs out, white wins normally
-        // If white runs out, black wins normally
-        await ref.read(chessServiceProvider).flagOnTimeout(widget.gameId, g, loser);
+        await ref.read(chessServiceProvider)
+            .flagOnTimeout(widget.gameId, g, loser);
         return;
       }
 
       await ref.read(chessServiceProvider).updateTimer(
-        widget.gameId,
-        g.currentTurn,
+        widget.gameId, g.currentTurn,
         isWhiteTurn ? newW : newB,
       );
     });
+  }
+
+  // ── Per-turn 60-second timer (local only) ─────────────────────────────────
+  void _startTurnTimer() {
+    _turnTimer?.cancel();
+    setState(() => _localTurnSeconds = 60);
+
+    _turnTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
+      if (!mounted) return;
+      setState(() => _localTurnSeconds--);
+
+      if (_localTurnSeconds <= 0) {
+        _turnTimer?.cancel();
+        final g = ref.read(chessGameProvider(widget.gameId)).valueOrNull;
+        if (g == null) return;
+        // Current player loses for not moving in 60s
+        await ref.read(chessServiceProvider)
+            .flagOnTimeout(widget.gameId, g, g.currentTurn);
+      }
+    });
+  }
+
+  void _handleTurnChange(ChessGameModel game) {
+    final myColor      = game.whitePlayerId == _uid
+        ? PieceColor.white : PieceColor.black;
+    final currentOwner = game.currentTurn;
+
+    if (currentOwner.name != _lastTurnOwner) {
+      _lastTurnOwner = currentOwner.name;
+      _turnTimer?.cancel();
+
+      if (currentOwner == myColor) {
+        _startTurnTimer();
+      } else {
+        setState(() => _localTurnSeconds = 60);
+      }
+    }
   }
 
   void _onSquareTap(Position pos, ChessGameModel game) {
@@ -115,9 +154,17 @@ class _ChessGameScreenState extends ConsumerState<ChessGameScreen> {
     }
   }
 
-  Future<void> _submitMove(ChessGameModel game, ChessMove move, {PieceType? promo}) async {
-    setState(() { _selected = null; _validMoves = []; _awaitingPromotion = false; });
-    await ref.read(chessServiceProvider).makeMove(widget.gameId, game, move, promotion: promo);
+  Future<void> _submitMove(ChessGameModel game, ChessMove move,
+      {PieceType? promo}) async {
+    setState(() {
+      _selected          = null;
+      _validMoves        = [];
+      _awaitingPromotion = false;
+    });
+    // Cancel turn timer immediately on move — opponent's timer starts via _handleTurnChange
+    _turnTimer?.cancel();
+    await ref.read(chessServiceProvider)
+        .makeMove(widget.gameId, game, move, promotion: promo);
   }
 
   void _handleGameEnd(ChessGameModel game) {
@@ -229,6 +276,7 @@ class _ChessGameScreenState extends ConsumerState<ChessGameScreen> {
         if (game.status == GameStatus.active || game.status == GameStatus.check ||
             game.status == GameStatus.armageddon) {
           if (_timer == null || !_timer!.isActive) _startTimer(game);
+          _handleTurnChange(game);
         }
 
         // Handle end
@@ -291,8 +339,10 @@ class _ChessGameScreenState extends ConsumerState<ChessGameScreen> {
 
   Widget _topBar(ChessGameModel game, PieceColor myColor, bool flipped) {
     final oppColor  = flipped ? PieceColor.white : PieceColor.black;
-    final oppName   = oppColor == PieceColor.white ? game.whitePlayerName : game.blackPlayerName;
-    final oppTime   = oppColor == PieceColor.white ? game.whiteTimeSeconds : game.blackTimeSeconds;
+    final oppName   = oppColor == PieceColor.white
+        ? game.whitePlayerName : game.blackPlayerName;
+    final oppTime   = oppColor == PieceColor.white
+        ? game.whiteTimeSeconds : game.blackTimeSeconds;
     final oppTurn   = game.currentTurn == oppColor;
 
     return Padding(
@@ -303,37 +353,49 @@ class _ChessGameScreenState extends ConsumerState<ChessGameScreen> {
           onPressed: () => context.go('/home'),
         ),
         const Spacer(),
-        _playerChip(oppName, oppTime, oppTurn, oppColor),
+        // Opponent chip — never shows turn timer
+        _playerChip(oppName, oppTime, oppTurn, oppColor,
+            showTurnTimer: false),
       ]),
     );
   }
 
   Widget _bottomBar(ChessGameModel game, PieceColor myColor, bool isMyTurn) {
-    final myName  = myColor == PieceColor.white ? game.whitePlayerName : game.blackPlayerName;
-    final myTime  = myColor == PieceColor.white ? game.whiteTimeSeconds : game.blackTimeSeconds;
+    final myName = myColor == PieceColor.white
+        ? game.whitePlayerName : game.blackPlayerName;
+    final myTime = myColor == PieceColor.white
+        ? game.whiteTimeSeconds : game.blackTimeSeconds;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(children: [
-        _playerChip(myName, myTime, isMyTurn, myColor),
+        // My chip — shows 60s turn countdown only when it's my turn
+        _playerChip(myName, myTime, isMyTurn, myColor,
+            showTurnTimer: true),
         const Spacer(),
         if (isMyTurn)
           const Text('Your Turn', style: TextStyle(
-              color: AppColors.teal, fontWeight: FontWeight.w700, fontSize: 13)),
+              color: AppColors.teal,
+              fontWeight: FontWeight.w700, fontSize: 13)),
       ]),
     );
   }
 
-  Widget _playerChip(String name, int secs, bool active, PieceColor color) {
-    final mins = secs ~/ 60;
-    final s    = secs % 60;
-    final time = '${mins.toString().padLeft(2,'0')}:${s.toString().padLeft(2,'0')}';
+  Widget _playerChip(String name, int secs, bool active,
+      PieceColor color, {bool showTurnTimer = false}) {
+    final mins  = secs ~/ 60;
+    final s     = secs % 60;
+    final time  = '${mins.toString().padLeft(2,'0')}:${s.toString().padLeft(2,'0')}';
     final isLow = secs < 30;
+
+    // Turn countdown values
+    final turnLow = _localTurnSeconds <= 10;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: active ? AppColors.teal.withOpacity(0.15) : AppColors.bg2,
+        color: active
+            ? AppColors.teal.withOpacity(0.15) : AppColors.bg2,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: active ? AppColors.teal : AppColors.cardBorder,
@@ -343,20 +405,58 @@ class _ChessGameScreenState extends ConsumerState<ChessGameScreen> {
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         CircleAvatar(
           radius: 14,
-          backgroundColor: color == PieceColor.white ? Colors.white : Colors.black,
-          child: Text(color == PieceColor.white ? '♔' : '♚',
-              style: TextStyle(
-                  fontSize: 14,
-                  color: color == PieceColor.white ? Colors.black : Colors.white)),
+          backgroundColor:
+              color == PieceColor.white ? Colors.white : Colors.black,
+          child: Text(
+            color == PieceColor.white ? '♔' : '♚',
+            style: TextStyle(
+              fontSize: 14,
+              color: color == PieceColor.white
+                  ? Colors.black : Colors.white,
+            ),
+          ),
         ),
         const SizedBox(width: 8),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Text(name, style: const TextStyle(fontSize: 12, color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600)),
-          Text(time, style: TextStyle(
-              fontSize: 14, fontWeight: FontWeight.w700,
-              color: isLow ? AppColors.danger : AppColors.textPrimary)),
-        ]),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(name, style: const TextStyle(
+                fontSize: 12, color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600)),
+            Text(time, style: TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w700,
+                color: isLow ? AppColors.danger : AppColors.textPrimary)),
+          ],
+        ),
+
+        // 60s turn countdown — only on MY chip when it's MY turn
+        if (showTurnTimer && active) ...[
+          const SizedBox(width: 10),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+            decoration: BoxDecoration(
+              color: turnLow
+                  ? AppColors.danger.withOpacity(0.25)
+                  : AppColors.teal.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: turnLow ? AppColors.danger : AppColors.teal,
+                width: 1.5,
+              ),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.timer, size: 11,
+                  color: turnLow ? AppColors.danger : AppColors.teal),
+              const SizedBox(width: 3),
+              Text('${_localTurnSeconds}s', style: TextStyle(
+                color: turnLow ? AppColors.danger : AppColors.teal,
+                fontSize: 12, fontWeight: FontWeight.w700,
+              )),
+            ]),
+          ),
+        ],
       ]),
     );
   }
