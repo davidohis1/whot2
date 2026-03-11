@@ -9,15 +9,16 @@ class WhotEngine {
   static WhotGameModel createGame({
     required String gameId,
     required List<({String uid, String name})> players,
+    int playerCount = 4,
   }) {
-    assert(players.length == 4);
+    assert(players.length == playerCount);
 
     var deck = buildWhotDeck()..shuffle(_rng);
 
     const handSize = 5;
-    final hands = List.generate(4, (_) => <WhotCard>[]);
-    for (int i = 0; i < handSize * 4; i++) {
-      hands[i % 4].add(deck.removeAt(0));
+    final hands = List.generate(playerCount, (_) => <WhotCard>[]);
+    for (int i = 0; i < handSize * playerCount; i++) {
+      hands[i % playerCount].add(deck.removeAt(0));
     }
 
     // Flip starter — avoid Whot 20 as first card
@@ -25,7 +26,7 @@ class WhotEngine {
     do { starter = deck.removeAt(0); } while (starter.isWhot && deck.isNotEmpty);
     if (starter.isWhot) deck.add(starter); // edge case
 
-    final gamePlayers = List.generate(4, (i) => WhotPlayer(
+    final gamePlayers = List.generate(playerCount, (i) => WhotPlayer(
       uid:      players[i].uid,
       name:     players[i].name,
       hand:     hands[i],
@@ -43,6 +44,7 @@ class WhotEngine {
       createdAt:          DateTime.now(),
       startedAt:          DateTime.now(),
       timeLeftSeconds:    420,
+      playerCount: playerCount,  
     );
   }
 

@@ -5,10 +5,13 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/home/screens/home_screen.dart';
+import '../../features/home/screens/wallet_screen.dart';
 import '../../features/chess/screens/chess_lobby_screens.dart';
 import '../../features/chess/screens/chess_game_screen.dart';
 import '../../features/whot/screens/whot_lobby_screen.dart';
 import '../../features/whot/screens/whot_game_screen.dart';
+import '../../features/ludo/screens/ludo_lobby_screen.dart';
+import '../../features/ludo/screens/ludo_game_screen.dart';
 import '../../shared/services/auth_service.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -40,11 +43,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/whot/lobby',
-        builder: (_, __) => const WhotLobbyScreen(),
+        builder: (context, state) => WhotLobbyScreen(
+          playerCount: (state.extra as int?) ?? 4,
+        ),
       ),
       GoRoute(
         path: '/whot/game/:gameId',
         builder: (_, state) => WhotGameScreen(gameId: state.pathParameters['gameId']!),
+      ),
+      GoRoute(
+        path: '/ludo/lobby',
+        builder: (context, state) {
+          final mode = state.extra as int? ?? 4;  // Get mode from extra, default to 4
+          return LudoLobbyScreen(modeArg: mode);
+        },
+      ),
+      GoRoute(
+        path: '/ludo/game/:gameId',
+        builder: (_, state) => LudoGameScreen(gameId: state.pathParameters['gameId']!),
+      ),
+      GoRoute(
+        path: '/wallet', 
+        builder: (_, __) => const WalletScreen()
       ),
     ],
     errorBuilder: (_, state) => Scaffold(

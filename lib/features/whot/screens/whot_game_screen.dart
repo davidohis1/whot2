@@ -219,15 +219,24 @@ class _WhotGameScreenState extends ConsumerState<WhotGameScreen> {
 
   void _showResultDialog(WhotGameModel game) {
     final myRank   = game.rankings.indexOf(_uid) + 1;
-    final prizes   = {1: '+1000 🪙', 2: '+300 🪙', 3: '-400 🪙', 4: '-400 🪙'};
-    final colors   = {
-      1: AppColors.gold, 2: AppColors.teal,
-      3: AppColors.danger, 4: AppColors.danger,
+    final is2p = game.playerCount == 2;
+    final prizes = is2p
+        ? {1: '+700 🪙', 2: '-400 🪙'}
+        : {1: '+1000 🪙', 2: '+300 🪙', 3: '-400 🪙', 4: '-400 🪙'};
+    final colors = {
+      1: AppColors.gold,
+      2: is2p ? AppColors.danger : AppColors.teal,
+      3: AppColors.danger,
+      4: AppColors.danger,
     };
-    final labels   = {
-      1: '🥇 1st Place!', 2: '🥈 2nd Place',
-      3: '🥉 3rd Place',  4: '4th Place',
+    final labels = {
+      1: '🥇 1st Place!',
+      2: is2p ? '2nd Place' : '🥈 2nd Place',
+      3: '🥉 3rd Place',
+      4: '4th Place',
     };
+  
+  
 
     // Build card count map for display
     final cardCounts = {
@@ -388,11 +397,12 @@ class _WhotGameScreenState extends ConsumerState<WhotGameScreen> {
                 Expanded(
                   child: Row(children: [
                     // Left player
-                    _sidePlayer(game, myIdx, 1),
+                    // Left player
+                    if (game.playerCount == 4) _sidePlayer(game, myIdx, 1),
                     // Centre table
                     Expanded(child: _centreTable(game, isMyTurn)),
                     // Right player
-                    _sidePlayer(game, myIdx, 2),
+                    if (game.playerCount == 4) _sidePlayer(game, myIdx, 2),
                   ]),
                 ),
                 // Bottom — my hand
@@ -430,7 +440,10 @@ class _WhotGameScreenState extends ConsumerState<WhotGameScreen> {
             color: AppColors.gold, fontWeight: FontWeight.w700,
             fontSize: 16, letterSpacing: 2)),
         const Spacer(),
-        _opponentChip(game, _opponentIdx(game, myIdx < 0 ? 0 : myIdx, 2)),
+        if (game.playerCount == 4)
+          _opponentChip(game, _opponentIdx(game, myIdx < 0 ? 0 : myIdx, 2))
+        else
+          _opponentChip(game, _opponentIdx(game, myIdx < 0 ? 0 : myIdx, 1)),
         const SizedBox(width: 8),
 
         // Turn countdown — only visible on MY screen when it's MY turn
@@ -511,6 +524,7 @@ class _WhotGameScreenState extends ConsumerState<WhotGameScreen> {
   }
 
   Widget _sidePlayer(WhotGameModel game, int myIdx, int offset) {
+    if (game.playerCount == 2) return const SizedBox(width: 0);
     final idx = _opponentIdx(game, myIdx < 0 ? 0 : myIdx, offset);
     if (idx < 0 || idx >= game.players.length) return const SizedBox(width: 48);
     final p      = game.players[idx];
@@ -556,7 +570,11 @@ class _WhotGameScreenState extends ConsumerState<WhotGameScreen> {
   Widget _centreTable(WhotGameModel game, bool isMyTurn) {
     return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       // Top opponent
-      _opponentChip(game, _opponentIdx(game, _myIdx(game), 2)),
+      // Top opponent
+      if (game.playerCount == 4)
+        _opponentChip(game, _opponentIdx(game, _myIdx(game), 2))
+      else
+        _opponentChip(game, _opponentIdx(game, _myIdx(game), 1)),
       const Spacer(),
       Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         // Market

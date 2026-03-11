@@ -148,7 +148,9 @@ class WhotGameModel {
   final DateTime         createdAt;
   final DateTime?        startedAt;
   final int              timeLeftSeconds;
+  final int playerCount; // 2 or 4
   final int              turnTimeLeft;   // 10-second per-turn countdown
+  
 
   const WhotGameModel({
     required this.gameId,
@@ -165,6 +167,7 @@ class WhotGameModel {
     this.startedAt,
     this.timeLeftSeconds = 420,
     this.turnTimeLeft    = 10,
+    this.playerCount = 4,
   });
 
   WhotPlayer get currentPlayer => players[currentPlayerIndex];
@@ -185,6 +188,7 @@ class WhotGameModel {
     DateTime?             startedAt,
     int?                  timeLeftSeconds,
     int?                  turnTimeLeft,
+    int?                  playerCount,
   }) => WhotGameModel(
     gameId:             gameId,
     players:            players            ?? this.players,
@@ -200,6 +204,7 @@ class WhotGameModel {
     startedAt:          startedAt          ?? this.startedAt,
     timeLeftSeconds:    timeLeftSeconds    ?? this.timeLeftSeconds,
     turnTimeLeft:       turnTimeLeft       ?? this.turnTimeLeft,
+    playerCount:        playerCount        ?? this.playerCount,
   );
 
   Map<String, dynamic> toMap() => {
@@ -217,6 +222,7 @@ class WhotGameModel {
     'startedAt':          startedAt?.toIso8601String(),
     'timeLeftSeconds':    timeLeftSeconds,
     'turnTimeLeft':       turnTimeLeft,
+    'playerCount':        playerCount,
   };
 
   factory WhotGameModel.fromMap(Map<String, dynamic> m) => WhotGameModel(
@@ -238,5 +244,6 @@ class WhotGameModel {
     startedAt:          m['startedAt'] != null ? DateTime.parse(m['startedAt'] as String) : null,
     timeLeftSeconds:    (m['timeLeftSeconds'] as num? ?? 420).toInt(),
     turnTimeLeft:       (m['turnTimeLeft']    as num? ?? 10).toInt(),
+    playerCount:        (m['playerCount']     as num? ?? 4).toInt(),
   );
 }

@@ -7,6 +7,8 @@ class UserModel {
   final int chessLosses;
   final int whotWins;
   final int whotLosses;
+  final int ludoWins;
+  final int ludoLosses;
   final String? avatarUrl;
   final DateTime createdAt;
 
@@ -19,6 +21,8 @@ class UserModel {
     this.chessLosses = 0,
     this.whotWins = 0,
     this.whotLosses = 0,
+    this.ludoWins = 0,
+    this.ludoLosses = 0,
     this.avatarUrl,
     required this.createdAt,
   });
@@ -37,6 +41,8 @@ class UserModel {
     chessLosses:  (map['chessLosses'] as num? ?? 0).toInt(),
     whotWins:     (map['whotWins']    as num? ?? 0).toInt(),
     whotLosses:   (map['whotLosses']  as num? ?? 0).toInt(),
+    ludoWins:     (map['ludoWins']    as num? ?? 0).toInt(),
+    ludoLosses:   (map['ludoLosses']  as num? ?? 0).toInt(),
     avatarUrl:    map['avatarUrl'] as String?,
     createdAt:    DateTime.parse(map['createdAt'] as String),
   );
@@ -50,6 +56,8 @@ class UserModel {
     'chessLosses': chessLosses,
     'whotWins':    whotWins,
     'whotLosses':  whotLosses,
+    'ludoWins':    ludoWins,
+    'ludoLosses':  ludoLosses,
     'avatarUrl':   avatarUrl,
     'createdAt':   createdAt.toIso8601String(),
   };
