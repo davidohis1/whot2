@@ -68,19 +68,16 @@ class WhotCard {
 
 List<WhotCard> buildWhotDeck() {
   final deck = <WhotCard>[];
+  const validNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14]; // no 9
 
-  // Circles: 1-14
-  for (int n = 1; n <= 14; n++) deck.add(WhotCard(shape: WhotShape.circle,   number: n));
-  // Triangles: 1-14
-  for (int n = 1; n <= 14; n++) deck.add(WhotCard(shape: WhotShape.triangle, number: n));
-  // Crosses: 1-14
-  for (int n = 1; n <= 14; n++) deck.add(WhotCard(shape: WhotShape.cross,    number: n));
-  // Squares: 1-14 (exclude some per standard; here full 14)
-  for (int n = 1; n <= 14; n++) deck.add(WhotCard(shape: WhotShape.square,   number: n));
-  // Stars: 1-8
-  for (int n = 1; n <= 8;  n++) deck.add(WhotCard(shape: WhotShape.star,     number: n));
+  for (int n in validNumbers) deck.add(WhotCard(shape: WhotShape.circle,   number: n));
+  for (int n in validNumbers) deck.add(WhotCard(shape: WhotShape.triangle, number: n));
+  for (int n in validNumbers) deck.add(WhotCard(shape: WhotShape.cross,    number: n));
+  for (int n in validNumbers) deck.add(WhotCard(shape: WhotShape.square,   number: n));
+  // Stars: 1-8 only (no 9 anyway)
+  for (int n = 1; n <= 8; n++) deck.add(WhotCard(shape: WhotShape.star,   number: n));
   // Whot (20) cards × 4
-  for (int i = 0; i < 4; i++)   deck.add(WhotCard(shape: WhotShape.whot,     number: 20));
+  for (int i = 0; i < 4; i++)  deck.add(WhotCard(shape: WhotShape.whot,   number: 20));
 
   return deck;
 }

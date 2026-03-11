@@ -91,21 +91,41 @@ class _WhotGameScreenState extends ConsumerState<WhotGameScreen> {
 
   // Called whenever the game state changes — detects whose turn it is
   void _handleTurnChange(WhotGameModel game) {
-    final currentOwner = game.currentPlayer.uid;
+  final currentOwner = game.currentPlayer.uid;
 
-    // Turn changed — reset local timer if it's now my turn
-    if (currentOwner != _lastTurnOwner) {
-      _lastTurnOwner = currentOwner;
-      _turnTimer?.cancel();
+  if (currentOwner != _lastTurnOwner) {
+    _lastTurnOwner = currentOwner;
+    _turnTimer?.cancel();
 
-      if (currentOwner == _uid) {
-        _startTurnTimer(game);
-      } else {
-        // Not my turn — stop local turn timer and reset display
-        setState(() => _localTurnSeconds = 10);
+    if (currentOwner == _uid) {
+      // Auto-draw if there's a pick penalty and we can't defend
+      if (game.pending == WhotActionPending.pickTwo ||
+          game.pending == WhotActionPending.pickThree) {
+        final myIdx  = game.players.indexWhere((p) => p.uid == _uid);
+        final hand   = game.players[myIdx].hand;
+        final canDefend = game.pending == WhotActionPending.pickTwo
+            ? hand.any((c) => c.number == 2)
+            : hand.any((c) => c.number == 5);
+
+        if (!canDefend) {
+          // Auto-draw after a short delay so player can see what happened
+          Future.delayed(const Duration(milliseconds: 800), () async {
+            if (!mounted) return;
+            final g = ref.read(whotGameProvider(widget.gameId)).valueOrNull;
+            if (g == null) return;
+            await ref.read(whotServiceProvider).drawCard(
+              widget.gameId, g, count: g.pendingCount);
+          });
+          setState(() => _localTurnSeconds = 10);
+          return; // don't start turn timer since it's auto-resolving
+        }
       }
+      _startTurnTimer(game);
+    } else {
+      setState(() => _localTurnSeconds = 10);
     }
   }
+}
 
   void _onCardTap(WhotCard card, WhotGameModel game) {
     final myIdx = game.players.indexWhere((p) => p.uid == _uid);
@@ -689,10 +709,10 @@ class _WhotGameScreenState extends ConsumerState<WhotGameScreen> {
     String msg = '';
     Color  col = AppColors.danger;
     if (game.pending == WhotActionPending.pickTwo) {
-      msg = '⚠ Pick ${game.pendingCount} OR defend with a 2!';
+      msg = '⚠ You have a 2! Play it to defend or cards will be drawn.';
     } else if (game.pending == WhotActionPending.pickThree) {
-      msg = '⚠ Pick ${game.pendingCount} OR defend with a 5!';
-    } else if (game.pending == WhotActionPending.suspension) {
+      msg = '⚠ You have a 5! Play it to defend or cards will be drawn.';
+    }else if (game.pending == WhotActionPending.suspension) {
       msg = '⛔ Suspended — you lose your turn!';
     }
     return Container(

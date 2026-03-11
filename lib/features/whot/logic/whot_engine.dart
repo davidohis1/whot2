@@ -97,21 +97,15 @@ class WhotEngine {
 
     // Stack pick-two / pick-three
     if (card.number == 2) {
-      if (game.pending == WhotActionPending.pickTwo) {
-        newPending   = WhotActionPending.pickTwo;
-        pendingCount = game.pendingCount + 2;
-      } else {
-        newPending   = WhotActionPending.pickTwo;
-        pendingCount = 2;
-      }
+      newPending   = WhotActionPending.pickTwo;
+      pendingCount = 2; // always exactly 2, no stacking
     } else if (card.number == 5) {
       newPending   = WhotActionPending.pickThree;
-      pendingCount = (game.pending == WhotActionPending.pickThree
-          ? game.pendingCount : 0) + 3;
-    } else if (card.number == 8) {
+      pendingCount = 3;
+    }else if (card.number == 8) {
       newPending = WhotActionPending.suspension;
-    } else if (card.number == 14) {
-      // General Market — everyone else draws 1
+    }  else if (card.number == 14) {
+      // General Market — everyone else draws 1, current player goes again
       final cIdx = game.currentPlayerIndex;
       for (int i = 0; i < players.length; i++) {
         if (i == cIdx) continue;
@@ -122,6 +116,17 @@ class WhotEngine {
           players[i] = players[i].copyWith(hand: [...players[i].hand, draw]);
         }
       }
+      // Same player plays again — return immediately without advancing turn
+      return game.copyWith(
+        players:          players,
+        pile:             pile,
+        market:           market,
+        calledShape:      calledShape,
+        clearCalledShape: calledShape == null,
+        pending:          WhotActionPending.none,
+        pendingCount:     0,
+        rankings:         rankings,
+      );
     } else if (card.number == 1) {
       // Hold On — same player goes again
       return game.copyWith(
