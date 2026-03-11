@@ -163,16 +163,19 @@ class _LudoGameScreenState extends ConsumerState<LudoGameScreen>
 
   void _showResultDialog(LudoGameModel game) {
     final myRank = game.rankings.indexOf(_uid) + 1;
-    final prizes = {1: '+1100 🪙', 2: '+200 🪙', 3: '-400 🪙', 4: '-400 🪙'};
+    final is2p = game.gameMode == LudoGameMode.twoPlayer;
+    final prizes = is2p
+        ? {1: '+700 🪙', 2: '-400 🪙'}
+        : {1: '+1100 🪙', 2: '+200 🪙', 3: '-400 🪙', 4: '-400 🪙'};
     final rankColors = {
       1: AppColors.gold,
-      2: AppColors.teal,
+      2: is2p ? AppColors.danger : AppColors.teal,
       3: AppColors.danger,
       4: AppColors.danger,
     };
     final labels = {
       1: '🥇 1st Place!',
-      2: '🥈 2nd Place',
+      2: is2p ? '2nd Place' : '🥈 2nd Place',
       3: '🥉 3rd Place',
       4: '4th Place',
     };
