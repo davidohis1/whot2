@@ -48,7 +48,18 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   build_runner: ^2.4.11
   riverpod_generator: ^2.4.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
+
+# PASTE THIS AT THE VERY BOTTOM (NO INDENTATION)
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/icon.png"
+  adaptive_icon_background: "#081C3B" # Dark blue from your Arena Games logo
+  adaptive_icon_foreground: "assets/images/icon.png"
   
